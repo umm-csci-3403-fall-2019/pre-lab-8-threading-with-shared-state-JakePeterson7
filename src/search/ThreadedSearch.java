@@ -4,7 +4,7 @@ import java.util.List;
 
 public class ThreadedSearch<T> implements Searcher<T>, Runnable {
 
-    private int numThreads;
+    private int numThreads = 4;
     private T target;
     private List<T> list;
     private int begin;
@@ -49,12 +49,36 @@ public class ThreadedSearch<T> implements Searcher<T>, Runnable {
          * threads, wait for them to all terminate, and then return the answer
          * in the shared `Answer` instance.
          */
-        return false;
+        //setting this up to control begin and end. The list is
+        int placeMarker = 0;
+        int placeIncrease = 2500000;
+
+        Answer answer = new Answer();
+        Thread[] threads = new Thread[numThreads];
+        ThreadedSearch[] threadedSearches = new ThreadedSearch[numThreads];
+        for(int i=0; i<numThreads; i++){
+            threadedSearches[i] = new ThreadedSearch<T>(target, list, placeMarker,
+                    placeMarker+placeIncrease, answer);
+            placeMarker = placeMarker+placeIncrease;
+        }
+        for(int i=0; i<numThreads; ++i){
+            threads[i] = new Thread(threadedSearches[i]);
+            threads[i].start();
+        }
+        for(int i=0; i<numThreads; ++i){
+            threads[i].join();
+        }
+
+        return answer.getAnswer();
     }
 
     public void run() {
-        // Delete this `throw` when you actually implement this method.
-        throw new UnsupportedOperationException();
+        for(int i=this.begin; answer.getAnswer()==false && i<this.end; i++) {
+            if (list.get(i).equals(target)) {
+                answer.setAnswer(true);
+            }
+        }
+
     }
 
     private class Answer {
